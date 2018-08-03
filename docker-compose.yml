@@ -1,0 +1,97 @@
+namenode:
+  image: uhopper/hadoop-namenode
+  hostname: namenode
+  container_name: namenode
+  domainname: hadoop
+  net: hadoop
+  volumes:
+    - /Users/pramesh/Downloads/hadoop/dfs/name:/hadoop/dfs/name
+  ports:
+     - "50070:50070"
+     - "8020:8020"
+  environment:
+    - CLUSTER_NAME=yarn
+
+datanode1:
+  image: uhopper/hadoop-datanode
+  hostname: datanode1
+  container_name: datanode1
+  domainname: hadoop
+  net: hadoop
+  volumes:
+    - /Users/pramesh/Downloads/hadoop/dfs/data:/hadoop/dfs/data
+  environment:
+    - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+
+resourcemanager:
+  image: uhopper/hadoop-resourcemanager
+  hostname: resourcemanager
+  container_name: resourcemanager
+  domainname: hadoop
+  net: hadoop
+  environment:
+    - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    - YARN_CONF_yarn_log___aggregation___enable=true
+    - YARN_CONF_yarn_nodemanager_pmem___check___enabled=false
+    - YARN_CONF_yarn_nodemanager_vmem___check___enabled=false
+  ports:
+    - "8088:8088"
+
+nodemanager1:
+  image: uhopper/hadoop-nodemanager
+  hostname: nodemanager1
+  container_name: nodemanager1
+  domainname: hadoop
+  net: hadoop
+  environment:
+    - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+    - YARN_CONF_yarn_log___aggregation___enable=true
+    - YARN_CONF_yarn_nodemanager_remote___app___log___dir=/app-logs
+    - YARN_CONF_yarn_nodemanager_pmem___check___enabled=false
+    - YARN_CONF_yarn_nodemanager_vmem___check___enabled=false
+  ports:
+     - "8042:8042"
+
+spark:
+  image: uhopper/hadoop-spark
+  hostname: spark
+  container_name: spark
+  domainname: hadoop
+  net: hadoop
+  environment:
+    - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+  command: tail -f /var/log/dmesg
+  ports:
+    - "4040:4040"
+    - "8080:8080"
+
+kafka:
+  image: confluent/kafka
+  hostname: kafka
+  container_name: kafka
+  domainname: hadoop
+  net: hadoop
+  ports:
+    - "9092:9092"
+
+zookeeper:
+  image: confluent/zookeeper
+  hostname: zookeeper
+  container_name: zookeeper
+  domainname: hadoop
+  net: hadoop
+  ports:
+    - "2181:2181"
+
+#   yarn-site-xml
+#     <property>
+#     <name>yarn.nodemanager.pmem-check-enabled</name>
+#     <value>false</value>
+# </property>
+
+# <property>
+#     <name>yarn.nodemanager.vmem-check-enabled</name>
+#     <value>false</value>
+# </property>
