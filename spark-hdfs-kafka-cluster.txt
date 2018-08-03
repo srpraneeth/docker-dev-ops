@@ -1,0 +1,46 @@
+NETWORK
+docker network create MY_CLUSTER
+
+HDFS
+docker run -p 50070:50070 -p50470:50470 -p8020:8020 -p9000:9000 --net MY_CLUSTER --name HDFS sequenceiq/hadoop-docker:2.7.1
+
+KAFKA
+docker run -it -p9092:9092 -p2181:2181 --net MY_CLUSTER --name KAFKA spotify/kafka
+
+KAFKAMGR
+docker run -it --rm  -p 8000:9000 -e ZK_HOSTS="KAFKA:2181" -e APPLICATION_SECRET=letmein --name KAFKAMANAGER --net MY_CLUSTER sheepkiller/kafka-manager
+
+SPARK
+docker run -it --net MY_CLUSTER --name SPARK -p4040:4040 mesosphere/spark
+
+MESOS MASTER
+docker run -d --net=host \
+    --net MY_CLUSTER \
+  -p 5050:5050 \
+  -e MESOS_PORT=5050 \
+  -e MESOS_ZK=zk://127.0.0.1:2181/mesos \
+  -e MESOS_QUORUM=1 \
+  -e MESOS_REGISTRY=in_memory \
+  -e MESOS_LOG_DIR=/var/log/mesos \
+  -e MESOS_WORK_DIR=/var/tmp/mesos \
+  -v "$(pwd)/log/mesos:/var/log/mesos" \
+  -v "$(pwd)/tmp/mesos:/var/tmp/mesos" \
+  mesosphere/mesos-master:0.28.0-2.0.16.ubuntu1404
+
+MESOS SLAVE
+  docker run -d --privileged \
+  --net MY_CLUSTER \
+  -p 5051:5051 \
+  -e MESOS_PORT=5051 \
+  -e MESOS_MASTER=zk://127.0.0.1:2181/mesos \
+  -e MESOS_SWITCH_USER=0 \
+  -e MESOS_CONTAINERIZERS=docker,mesos \
+  -e MESOS_LOG_DIR=/var/log/mesos \
+  -e MESOS_WORK_DIR=/var/tmp/mesos \
+  -v "$(pwd)/log/mesos:/var/log/mesos" \
+  -v "$(pwd)/tmp/mesos:/var/tmp/mesos" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /cgroup:/cgroup \
+  -v /sys:/sys \
+  -v /usr/local/bin/docker:/usr/local/bin/docker \
+  mesosphere/mesos-slave:0.28.0-2.0.16.ubuntu1404
